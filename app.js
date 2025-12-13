@@ -110,14 +110,23 @@ function startPractice(subject) {
         const card = deck[currentCardIndex];
         app.innerHTML = `
             <div class="flashcard">
-                <div class="card-front">${card.mandarin}</div>
-                <div class="card-back">
-                    <p><strong>Pinyin:</strong> ${card.pinyin}</p>
-                    <p><strong>English:</strong> ${card.english}</p>
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="mandarin">${card.mandarin}</div>
+                        <div class="pinyin">${card.pinyin}</div>
+                    </div>
+                    <div class="card-back">
+                        <p>${card.english}</p>
+                    </div>
                 </div>
             </div>
             <button id="next-card-btn">Next Card</button>
         `;
+
+        document.querySelector('.flashcard').addEventListener('click', (e) => {
+            e.currentTarget.querySelector('.card-inner').classList.toggle('is-flipped');
+        });
+
         document.getElementById('next-card-btn').addEventListener('click', () => {
             currentCardIndex++;
             renderCard();

@@ -74,6 +74,19 @@ button:hover, .option-btn:hover {
     width: 100%;
     height: 250px;
     margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.card-inner.is-flipped {
+    transform: rotateY(180deg);
 }
 
 .card-front, .card-back {
@@ -86,7 +99,6 @@ button:hover, .option-btn:hover {
     justify-content: center;
     align-items: center;
     backface-visibility: hidden;
-    transition: transform 0.6s;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
@@ -94,23 +106,25 @@ button:hover, .option-btn:hover {
 .card-front {
     background-color: #17a2b8;
     color: white;
-    font-size: 3rem;
+    flex-direction: column;
+}
+
+.card-front .mandarin {
+    font-size: 4rem;
     font-family: 'Ma Shan Zheng', cursive;
+}
+
+.card-front .pinyin {
+    font-size: 1.5rem;
+    margin-top: 10px;
 }
 
 .card-back {
     background-color: #f8f9fa;
     color: #333;
     transform: rotateY(180deg);
-    flex-direction: column;
-}
-
-.flashcard:hover .card-front {
-    transform: rotateY(180deg);
-}
-
-.flashcard:hover .card-back {
-    transform: rotateY(0deg);
+    font-size: 2.5rem;
+    font-weight: bold;
 }
 
 .options {
