@@ -5,6 +5,7 @@ const VOCAB_CACHE_KEY = 'vocabularyCache';
 function getVocabularyCache() {
     try {
         const cache = localStorage.getItem(VOCAB_CACHE_KEY);
+        // We only store the parsedData now, so we can return it directly
         return cache ? JSON.parse(cache) : null;
     } catch (e) {
         console.error("Error getting vocabulary cache:", e);
@@ -12,42 +13,13 @@ function getVocabularyCache() {
     }
 }
 
-function setVocabularyCache(cache) {
+function setVocabularyCache(data) {
     try {
-        localStorage.setItem(VOCAB_CACHE_KEY, JSON.stringify(cache));
+        // We only store the parsedData now
+        localStorage.setItem(VOCAB_CACHE_KEY, JSON.stringify(data));
     } catch (e) {
         console.error("Error setting vocabulary cache:", e);
     }
-}
-
-async function checkForUpdates() {
-    const cache = getVocabularyCache();
-    const headers = {};
-    if (cache && cache.etag) {
-        headers['If-None-Match'] = cache.etag;
-    }
-    if (cache && cache.lastModified) {
-        headers['If-Modified-Since'] = cache.lastModified;
-    }
-
-    try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVL/pub?output=csv', { method: 'HEAD' });
-        if (response.status === 304) {
-            return { updateAvailable: false };
-        }
-        if (response.ok) {
-            const newEtag = response.headers.get('etag');
-            const newLastModified = response.headers.get('last-modified');
-            return {
-                updateAvailable: true,
-                etag: newEtag,
-                lastModified: newLastModified
-            };
-        }
-    } catch (e) {
-        console.error("Update check failed:", e);
-    }
-    return { updateAvailable: false };
 }
 
 function redownloadVocabulary() {
@@ -56,4 +28,4 @@ function redownloadVocabulary() {
     location.reload();
 }
 
-export { getVocabularyCache, setVocabularyCache, checkForUpdates, redownloadVocabulary };
+export { getVocabularyCache, setVocabularyCache, redownloadVocabulary };

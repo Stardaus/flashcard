@@ -1,5 +1,5 @@
 import { getVocabulary, generateDeck } from './data-service.js';
-import { getVocabularyCache, setVocabularyCache, checkForUpdates, redownloadVocabulary } from './storage-service.js';
+import { getVocabularyCache, setVocabularyCache, redownloadVocabulary } from './storage-service.js';
 
 const app = document.getElementById('app');
 let vocabulary = [];
@@ -13,36 +13,24 @@ async function init() {
                 console.log('ServiceWorker registration failed: ', err);
             });
         });
+
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'NEW_DATA_AVAILABLE') {
+                showUpdateBanner();
+            }
+        });
     }
 
     const cachedData = getVocabularyCache();
 
-    if (cachedData && cachedData.parsedData) {
-        vocabulary = cachedData.parsedData;
+    if (cachedData) {
+        vocabulary = cachedData;
         console.log('Loaded vocabulary from cache.');
         renderHome();
-        // Check for updates in the background
-        const updateInfo = await checkForUpdates();
-        if (updateInfo.updateAvailable) {
-            console.log("Update available!");
-            const newVocab = await getVocabulary();
-            setVocabularyCache({
-                parsedData: newVocab,
-                etag: updateInfo.etag,
-                lastModified: updateInfo.lastModified,
-                updateAvailable: true
-            });
-            showUpdateBanner();
-        }
     } else {
         console.log('No cache found, fetching fresh vocabulary.');
         vocabulary = await getVocabulary();
-        const updateInfo = await checkForUpdates(); // To get etag etc.
-        setVocabularyCache({
-            parsedData: vocabulary,
-            etag: updateInfo.etag,
-            lastModified: updateInfo.lastModified
-        });
+        setVocabularyCache(vocabulary);
         console.log('Vocabulary fetched and cached.');
         renderHome();
     }
@@ -82,32 +70,57 @@ function renderHome() {
 }
 
 function renderSubjectSelection(mode) {
+    let selectedSubject = null;
+
     app.innerHTML = `
         <h2>Select a Subject</h2>
-        <button data-subject="Mandarin">Mandarin</button>
-        <button data-subject="Science">Science</button>
-        <button data-subject="Math">Math</button>
-        <button data-subject="Mixed">Mixed</button>
+        <div class="subject-selection">
+            <button data-subject="Mandarin">Mandarin</button>
+            <button data-subject="Science">Science</button>
+            <button data-subject="Math">Math</button>
+            <button data-subject="Mixed">Mixed</button>
+        </div>
         <hr>
+        <h2>Number of Cards</h2>
+        <select id="num-cards-select">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="All">All</option>
+        </select>
+        <hr>
+        <button id="start-session-btn" disabled>Select a Subject</button>
         <button id="back-btn">Back to Mode Selection</button>
     `;
 
     document.getElementById('back-btn').addEventListener('click', renderHome);
+    const startBtn = document.getElementById('start-session-btn');
 
     app.querySelectorAll('[data-subject]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const subject = btn.getAttribute('data-subject');
-            if (mode === 'practice') {
-                startPractice(subject);
-            } else {
-                startGame(subject);
-            }
+        btn.addEventListener('click', (e) => {
+            selectedSubject = btn.getAttribute('data-subject');
+            // Highlight the selected button
+            app.querySelectorAll('[data-subject]').forEach(b => b.classList.remove('selected'));
+            e.currentTarget.classList.add('selected');
+            startBtn.disabled = false;
+            startBtn.textContent = `Start ${mode}`;
         });
+    });
+
+    startBtn.addEventListener('click', () => {
+        if (selectedSubject) {
+            const numberOfCards = document.getElementById('num-cards-select').value;
+            if (mode === 'practice') {
+                startPractice(selectedSubject, numberOfCards);
+            } else {
+                startGame(selectedSubject, numberOfCards);
+            }
+        }
     });
 }
 
-function startPractice(subject) {
-    const deck = generateDeck(vocabulary, subject);
+function startPractice(subject, numberOfCards) {
+    const deck = generateDeck(vocabulary, subject, numberOfCards);
     let currentCardIndex = 0;
 
     function renderCard() {
@@ -149,8 +162,8 @@ function startPractice(subject) {
     renderCard();
 }
 
-function startGame(subject) {
-    const deck = generateDeck(vocabulary, subject);
+function startGame(subject, numberOfCards) {
+    const deck = generateDeck(vocabulary, subject, numberOfCards);
     let score = 0;
     let currentCardIndex = 0;
 

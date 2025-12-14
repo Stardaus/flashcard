@@ -43,6 +43,12 @@ self.addEventListener('fetch', event => {
         return cache.match(event.request).then(response => {
           const fetchPromise = fetch(event.request).then(networkResponse => {
             cache.put(event.request, networkResponse.clone());
+            // Notify the app that new data is available
+            self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({ type: 'NEW_DATA_AVAILABLE' });
+                });
+            });
             return networkResponse;
           });
           return response || fetchPromise;

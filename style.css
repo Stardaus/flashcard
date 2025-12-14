@@ -147,3 +147,37 @@ button:hover, .option-btn:hover {
 #refresh-btn {
     margin-left: 1em;
 }
+
+.subject-selection {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.subject-selection button {
+    margin: 0;
+}
+
+button.selected {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#num-cards-select {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    margin: 10px 0;
+}
+
+#start-session-btn {
+    background-color: #28a745;
+}
+
+#start-session-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
