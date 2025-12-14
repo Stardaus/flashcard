@@ -1,18 +1,13 @@
 // DataService: CSV parsing, validation, and deck generation
 
 async function getVocabulary() {
-    console.log('Fetching vocabulary...');
     try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVL/pub?output=csv');
-        console.log('Fetch response:', response);
+        const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVj/pub?output=csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const csvText = await response.text();
-        console.log('CSV Text:', csvText);
-        const parsedData = parseCSV(csvText);
-        console.log('Parsed Vocabulary:', parsedData);
-        return parsedData;
+        return parseCSV(csvText);
     } catch (error) {
         console.error("Failed to fetch or parse vocabulary:", error);
         return [];
@@ -20,7 +15,6 @@ async function getVocabulary() {
 }
 
 function parseCSV(csvText) {
-    console.log('Parsing CSV...');
     const lines = csvText.trim().split('\n');
     const headers = lines[0].split(',').map(header => header.trim());
     const vocabulary = [];
@@ -29,11 +23,17 @@ function parseCSV(csvText) {
         const values = lines[i].split(',');
         const card = {};
         headers.forEach((header, index) => {
-            card[header] = values[index].trim();
+            let value = values[index] ? values[index].trim() : '';
+            if (header === 'meaning') {
+                card['english'] = value;
+            } else if (header === 'sources') {
+                card['subject'] = value;
+            } else {
+                card[header] = value;
+            }
         });
         vocabulary.push(card);
     }
-    console.log('Finished parsing CSV.');
     return vocabulary;
 }
 

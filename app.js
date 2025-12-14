@@ -24,14 +24,23 @@ async function init() {
     const cachedData = getVocabularyCache();
 
     if (cachedData) {
-        vocabulary = cachedData;
+        // Handle both old and new cache formats
+        if (Array.isArray(cachedData)) {
+            vocabulary = cachedData;
+        } else if (cachedData.parsedData) {
+            vocabulary = cachedData.parsedData;
+        }
         console.log('Loaded vocabulary from cache.');
+        console.log('Initialized vocabulary:', vocabulary);
+        console.log('Is vocabulary an array?', Array.isArray(vocabulary));
         renderHome();
     } else {
         console.log('No cache found, fetching fresh vocabulary.');
         vocabulary = await getVocabulary();
         setVocabularyCache(vocabulary);
         console.log('Vocabulary fetched and cached.');
+        console.log('Initialized vocabulary:', vocabulary);
+        console.log('Is vocabulary an array?', Array.isArray(vocabulary));
         renderHome();
     }
 }
@@ -120,6 +129,9 @@ function renderSubjectSelection(mode) {
 }
 
 function startPractice(subject, numberOfCards) {
+    console.log('Starting practice...');
+    console.log('vocabulary in startPractice:', vocabulary);
+    console.log('Is vocabulary an array?', Array.isArray(vocabulary));
     const deck = generateDeck(vocabulary, subject, numberOfCards);
     let currentCardIndex = 0;
 
@@ -163,6 +175,9 @@ function startPractice(subject, numberOfCards) {
 }
 
 function startGame(subject, numberOfCards) {
+    console.log('Starting game...');
+    console.log('vocabulary in startGame:', vocabulary);
+    console.log('Is vocabulary an array?', Array.isArray(vocabulary));
     const deck = generateDeck(vocabulary, subject, numberOfCards);
     let score = 0;
     let currentCardIndex = 0;
@@ -194,7 +209,7 @@ function startGame(subject, numberOfCards) {
             <h2>What is the meaning of "${card.mandarin}"?</h2>
             <div class="options">
                 <button class="option-btn">${options[0]}</button>
-                <button class="option-btn">${options[1]}</button>
+                <button class.="option-btn">${options[1]}</button>
             </div>
         `;
 

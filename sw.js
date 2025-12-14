@@ -1,4 +1,4 @@
-const SHELL_CACHE_NAME = 'sjkc-fun-learning-shell-v2';
+const SHELL_CACHE_NAME = 'sjkc-fun-learning-shell-v3';
 const DATA_CACHE_NAME = 'sjkc-fun-learning-data-v1';
 const VOCAB_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVL/pub?output=csv';
 
@@ -19,6 +19,7 @@ self.addEventListener('install', event => {
         console.log('Opened shell cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -31,7 +32,7 @@ self.addEventListener('activate', event => {
             return caches.delete(cacheName);
           }
         })
-      );
+      ).then(() => self.clients.claim());
     })
   );
 });
