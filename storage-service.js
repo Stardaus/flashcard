@@ -31,7 +31,7 @@ async function checkForUpdates() {
     }
 
     try {
-        const response = await fetch('vocabulary.csv', { method: 'HEAD' });
+        const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVL/pub?output=csv', { method: 'HEAD' });
         if (response.status === 304) {
             return { updateAvailable: false };
         }

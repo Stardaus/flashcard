@@ -131,3 +131,19 @@ button:hover, .option-btn:hover {
     display: flex;
     flex-direction: column;
 }
+
+.update-banner {
+    background-color: #ffc107;
+    color: #000;
+    padding: 1em;
+    text-align: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+#refresh-btn {
+    margin-left: 1em;
+}

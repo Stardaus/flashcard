@@ -2,7 +2,7 @@
 
 async function getVocabulary() {
     try {
-        const response = await fetch('vocabulary.csv');
+        const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQKcYywd1f4YQ0f3AJShcNVr5aIYBClHUkFF5a9tBoNS7n4CK4zvtzZboyHvFS87Tt0dXMII7xPqTVL/pub?output=csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

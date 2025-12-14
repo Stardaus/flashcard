@@ -32,8 +32,7 @@ async function init() {
                 lastModified: updateInfo.lastModified,
                 updateAvailable: true
             });
-             // For now, just log. In a real app, we'd show a button.
-            console.log("Vocabulary updated in cache. Will be used on next reload.");
+            showUpdateBanner();
         }
     } else {
         console.log('No cache found, fetching fresh vocabulary.');
@@ -47,6 +46,20 @@ async function init() {
         console.log('Vocabulary fetched and cached.');
         renderHome();
     }
+}
+
+function showUpdateBanner() {
+    const banner = document.createElement('div');
+    banner.className = 'update-banner';
+    banner.innerHTML = `
+        A new version of the vocabulary is available.
+        <button id="refresh-btn">Refresh</button>
+    `;
+    document.body.prepend(banner);
+
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+        location.reload();
+    });
 }
 
 function renderHome() {
