@@ -9,7 +9,6 @@ async function getVocabulary() {
         const csvText = await response.text();
         return parseCSV(csvText);
     } catch (error) {
-        console.error("Failed to fetch or parse vocabulary:", error);
         return [];
     }
 }

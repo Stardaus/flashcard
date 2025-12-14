@@ -30,17 +30,10 @@ async function init() {
         } else if (cachedData.parsedData) {
             vocabulary = cachedData.parsedData;
         }
-        console.log('Loaded vocabulary from cache.');
-        console.log('Initialized vocabulary:', vocabulary);
-        console.log('Is vocabulary an array?', Array.isArray(vocabulary));
         renderHome();
     } else {
-        console.log('No cache found, fetching fresh vocabulary.');
         vocabulary = await getVocabulary();
         setVocabularyCache(vocabulary);
-        console.log('Vocabulary fetched and cached.');
-        console.log('Initialized vocabulary:', vocabulary);
-        console.log('Is vocabulary an array?', Array.isArray(vocabulary));
         renderHome();
     }
 }
@@ -59,6 +52,45 @@ function showUpdateBanner() {
     });
 }
 
+function showModal(message, type = 'alert') {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+
+        const messageEl = document.createElement('p');
+        messageEl.textContent = message;
+        content.appendChild(messageEl);
+
+        const buttons = document.createElement('div');
+        buttons.className = 'modal-buttons';
+
+        const okButton = document.createElement('button');
+        okButton.textContent = 'OK';
+        okButton.onclick = () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        };
+        buttons.appendChild(okButton);
+
+        if (type === 'confirm') {
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.onclick = () => {
+                document.body.removeChild(overlay);
+                resolve(false);
+            };
+            buttons.appendChild(cancelButton);
+        }
+
+        content.appendChild(buttons);
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+    });
+}
+
 function renderHome() {
     app.innerHTML = `
         <h1>SJKC Fun Learning Companion</h1>
@@ -71,8 +103,9 @@ function renderHome() {
 
     document.getElementById('practice-btn').addEventListener('click', () => renderSubjectSelection('practice'));
     document.getElementById('game-btn').addEventListener('click', () => renderSubjectSelection('game'));
-    document.getElementById('redownload-btn').addEventListener('click', () => {
-        if(confirm("Are you sure you want to redownload all vocabulary? This will clear any saved progress.")) {
+    document.getElementById('redownload-btn').addEventListener('click', async () => {
+        const confirmed = await showModal("Are you sure you want to redownload all vocabulary? This will clear any saved progress.", 'confirm');
+        if (confirmed) {
             redownloadVocabulary();
         }
     });
@@ -129,9 +162,6 @@ function renderSubjectSelection(mode) {
 }
 
 function startPractice(subject, numberOfCards) {
-    console.log('Starting practice...');
-    console.log('vocabulary in startPractice:', vocabulary);
-    console.log('Is vocabulary an array?', Array.isArray(vocabulary));
     const deck = generateDeck(vocabulary, subject, numberOfCards);
     let currentCardIndex = 0;
 
@@ -175,9 +205,6 @@ function startPractice(subject, numberOfCards) {
 }
 
 function startGame(subject, numberOfCards) {
-    console.log('Starting game...');
-    console.log('vocabulary in startGame:', vocabulary);
-    console.log('Is vocabulary an array?', Array.isArray(vocabulary));
     const deck = generateDeck(vocabulary, subject, numberOfCards);
     let score = 0;
     let currentCardIndex = 0;
@@ -195,31 +222,40 @@ function startGame(subject, numberOfCards) {
 
         const card = deck[currentCardIndex];
         const options = [card.english];
+        
         // Get a random wrong answer
-        let randomCard = card;
-        while(randomCard.id === card.id) {
-            randomCard = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+        let randomCard;
+        if (vocabulary.length > 1) {
+            do {
+                randomCard = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+            } while (randomCard.mandarin === card.mandarin);
+            options.push(randomCard.english);
+        } else {
+            // Handle case with only one vocabulary item
+            options.push("(No other options)");
         }
-        options.push(randomCard.english);
 
         // Shuffle options
         options.sort(() => Math.random() - 0.5);
 
         app.innerHTML = `
-            <h2>What is the meaning of "${card.mandarin}"?</h2>
+            <div class="game-card">
+                <div class="mandarin">${card.mandarin}</div>
+                <div class="pinyin">${card.pinyin}</div>
+            </div>
             <div class="options">
                 <button class="option-btn">${options[0]}</button>
-                <button class.="option-btn">${options[1]}</button>
+                <button class="option-btn">${options[1]}</button>
             </div>
         `;
 
         app.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 if (e.target.textContent === card.english) {
                     score++;
-                    alert('Correct!');
+                    await showModal('Correct!');
                 } else {
-                    alert('Wrong!');
+                    await showModal('Wrong!');
                 }
                 currentCardIndex++;
                 renderQuestion();
