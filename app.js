@@ -32,9 +32,13 @@ async function init() {
         }
         renderHome();
     } else {
-        vocabulary = await getVocabulary();
-        setVocabularyCache(vocabulary);
-        renderHome();
+        try {
+            vocabulary = await getVocabulary();
+            setVocabularyCache(vocabulary);
+            renderHome();
+        } catch (error) {
+            showModal("Could not load vocabulary. Please check your internet connection and try again.");
+        }
     }
 }
 
@@ -166,36 +170,62 @@ function startPractice(subject, numberOfCards) {
     let currentCardIndex = 0;
 
     function renderCard() {
+        app.innerHTML = ''; // Clear previous content
+
         if (currentCardIndex >= deck.length) {
-            app.innerHTML = `
-                <h2>Practice Complete!</h2>
-                <button id="back-btn">Back to Subjects</button>
-            `;
-            document.getElementById('back-btn').addEventListener('click', () => renderSubjectSelection('practice'));
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Practice Complete!';
+            app.appendChild(h2);
+
+            const backBtn = document.createElement('button');
+            backBtn.id = 'back-btn';
+            backBtn.textContent = 'Back to Subjects';
+            backBtn.onclick = () => renderSubjectSelection('practice');
+            app.appendChild(backBtn);
             return;
         }
 
         const card = deck[currentCardIndex];
-        app.innerHTML = `
-            <div class="flashcard">
-                <div class="card-inner">
-                    <div class="card-front">
-                        <div class="mandarin">${card.mandarin}</div>
-                        <div class="pinyin">${card.pinyin}</div>
-                    </div>
-                    <div class="card-back">
-                        <p>${card.english}</p>
-                    </div>
-                </div>
-            </div>
-            <button id="next-card-btn">Next Card</button>
-        `;
 
-        document.querySelector('.flashcard').addEventListener('click', (e) => {
+        const flashcard = document.createElement('div');
+        flashcard.className = 'flashcard';
+
+        const cardInner = document.createElement('div');
+        cardInner.className = 'card-inner';
+
+        const cardFront = document.createElement('div');
+        cardFront.className = 'card-front';
+        const mandarinDiv = document.createElement('div');
+        mandarinDiv.className = 'mandarin';
+        mandarinDiv.textContent = card.mandarin;
+        const pinyinDiv = document.createElement('div');
+        pinyinDiv.className = 'pinyin';
+        pinyinDiv.textContent = card.pinyin;
+        cardFront.appendChild(mandarinDiv);
+        cardFront.appendChild(pinyinDiv);
+
+        const cardBack = document.createElement('div');
+        cardBack.className = 'card-back';
+        const englishP = document.createElement('p');
+        englishP.textContent = card.english;
+        cardBack.appendChild(englishP);
+
+        cardInner.appendChild(cardFront);
+        cardInner.appendChild(cardBack);
+        flashcard.appendChild(cardInner);
+
+        const nextButton = document.createElement('button');
+        nextButton.id = 'next-card-btn';
+        nextButton.textContent = 'Next Card';
+
+        app.appendChild(flashcard);
+        app.appendChild(nextButton);
+
+        flashcard.addEventListener('click', (e) => {
             e.currentTarget.querySelector('.card-inner').classList.toggle('is-flipped');
         });
 
-        document.getElementById('next-card-btn').addEventListener('click', () => {
+        nextButton.addEventListener('click', () => {
             currentCardIndex++;
             renderCard();
         });
@@ -210,13 +240,22 @@ function startGame(subject, numberOfCards) {
     let currentCardIndex = 0;
 
     function renderQuestion() {
-         if (currentCardIndex >= deck.length) {
-            app.innerHTML = `
-                <h2>Game Over!</h2>
-                <p>Your score: ${score} / ${deck.length}</p>
-                <button id="back-btn">Back to Subjects</button>
-            `;
-            document.getElementById('back-btn').addEventListener('click', () => renderSubjectSelection('game'));
+        app.innerHTML = ''; // Clear previous content
+
+        if (currentCardIndex >= deck.length) {
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Game Over!';
+            app.appendChild(h2);
+
+            const p = document.createElement('p');
+            p.textContent = `Your score: ${score} / ${deck.length}`;
+            app.appendChild(p);
+
+            const backBtn = document.createElement('button');
+            backBtn.id = 'back-btn';
+            backBtn.textContent = 'Back to Subjects';
+            backBtn.onclick = () => renderSubjectSelection('game');
+            app.appendChild(backBtn);
             return;
         }
 
@@ -238,19 +277,27 @@ function startGame(subject, numberOfCards) {
         // Shuffle options
         options.sort(() => Math.random() - 0.5);
 
-        app.innerHTML = `
-            <div class="game-card">
-                <div class="mandarin">${card.mandarin}</div>
-                <div class="pinyin">${card.pinyin}</div>
-            </div>
-            <div class="options">
-                <button class="option-btn">${options[0]}</button>
-                <button class="option-btn">${options[1]}</button>
-            </div>
-        `;
+        const gameCard = document.createElement('div');
+        gameCard.className = 'game-card';
 
-        app.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+        const mandarinDiv = document.createElement('div');
+        mandarinDiv.className = 'mandarin';
+        mandarinDiv.textContent = card.mandarin;
+        gameCard.appendChild(mandarinDiv);
+
+        const pinyinDiv = document.createElement('div');
+        pinyinDiv.className = 'pinyin';
+        pinyinDiv.textContent = card.pinyin;
+        gameCard.appendChild(pinyinDiv);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options';
+
+        options.forEach(optionText => {
+            const optionBtn = document.createElement('button');
+            optionBtn.className = 'option-btn';
+            optionBtn.textContent = optionText;
+            optionBtn.onclick = async (e) => {
                 if (e.target.textContent === card.english) {
                     score++;
                     await showModal('Correct!');
@@ -259,8 +306,12 @@ function startGame(subject, numberOfCards) {
                 }
                 currentCardIndex++;
                 renderQuestion();
-            });
+            };
+            optionsDiv.appendChild(optionBtn);
         });
+
+        app.appendChild(gameCard);
+        app.appendChild(optionsDiv);
     }
 
     renderQuestion();

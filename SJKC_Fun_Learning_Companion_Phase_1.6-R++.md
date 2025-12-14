@@ -1,13 +1,13 @@
 # SJKC Fun Learning Companion
-## Production Documentation — Phase 1.6-R++ (Reduced, Robust & Truly Offline-First)
+## Production Documentation — Phase 1.7 (Google Sheet Integration & Service Worker Updates)
 
 ---
 
 ## DOCUMENT CONTROL
 
 **Project Name:** SJKC Fun Learning Companion  
-**Version:** 3.9 (Production Release — R++)  
-**Phase:** 1.6-R++ — Offline-First (App Shell + Data Cached, No Backend)  
+**Version:** 4.0 (Production Release)  
+**Phase:** 1.7 — Google Sheet Integration & Service Worker Updates
 **Audience:** Parents, Developers (Future-proof handover)  
 **Status:** Approved for Production Deployment
 
@@ -46,17 +46,18 @@ Vocabulary sources include:
 
 ---
 
-## A4. In-Scope Features (Phase 1.6-R++)
+## A4. In-Scope Features (Phase 1.7)
 
 - Practice Mode (flip-card learning)  
 - Game Mode (two-option recognition)  
 - Subject selection: Mandarin, Science, Math, Mixed  
-- Personal Best tracking (per device)  
-- Offline-first vocabulary availability  
-- Deferred content update mechanism  
+- **Select number of cards for practice/game**
+- Offline-first vocabulary availability via Service Worker data caching
+- **Service worker-based update mechanism with user notification**
 - Manual recovery / redownload control for parents  
 - **Mandatory App Shell caching via Service Worker**  
-- Installable PWA  
+- Installable PWA
+- **Custom-styled modals for alerts and confirmations**
 
 ---
 
@@ -71,7 +72,7 @@ Vocabulary sources include:
 
 ## A6. User Flow
 
-Landing → Mode Selection → Configuration → Activity → Results → Personal Best
+Landing → Mode Selection → Configuration → Activity → Results
 
 ---
 
@@ -84,25 +85,25 @@ The application is a **Modular Single Page Application (SPA)** implemented using
 ```
 UI Layer → AppController → Services Layer
                 │
-                └→ Service Worker (App Shell Cache)
+                └→ Service Worker (App Shell & Data Cache)
 ```
 
 Services:
-- **DataService** — content parsing, validation, deck generation  
-- **StorageService** — persistence, update detection, recovery actions  
+- **DataService** — content parsing, validation, deck generation from Google Sheet
+- **StorageService** — persistence of parsed data in localStorage
 
 ---
 
-## B2. Key Architectural Decisions (Phase 1.6-R++)
+## B2. Key Architectural Decisions (Phase 1.7)
 
-1. **No backend in Phase 1.6-R++**  
-2. **Service Worker is mandatory for App Shell caching**  
+1. **No backend in Phase 1.7**  
+2. **Service Worker is mandatory for App Shell and Data caching**  
 3. **localStorage used for runtime persistence of parsed data**  
-4. **CSV is treated strictly as a transport format**  
-5. **Update detection uses HTTP HEAD (ETag / Last-Modified)**  
-6. **Content updates are deferred and never applied mid-session**  
+4. **Vocabulary data is fetched from a public Google Sheet CSV**
+5. **Update detection is handled by the service worker using a "stale-while-revalidate" strategy**
+6. **The service worker notifies the app of available updates**
 7. **Manual recovery (“Redownload Vocabulary”) is mandatory**  
-8. **IndexedDB reserved strictly for Phase 2 escalation**  
+8. **IndexedDB reserved for future escalation if localStorage proves insufficient**
 9. **All scripts loaded via native ES Modules**  
 
 ---
@@ -111,29 +112,20 @@ Services:
 
 ### Flashcard
 ```
-{ id, subject, mandarin, pinyin, english }
-```
-
-### PersonalBestEntry
-```
-{ subject, score, date }
+{ subject, mandarin, pinyin, english }
 ```
 
 ### VocabularyCache (internal)
+The `vocabularyCache` in `localStorage` is now a simple array of `Flashcard` objects.
 ```
-{
-  parsedData: Flashcard[],
-  etag?: string,
-  lastModified?: string,
-  updateAvailable?: boolean
-}
+Flashcard[]
 ```
 
 ---
 
 ## B4. Offline-First Strategy (R++ — App + Data Survivability)
 
-Phase 1.6-R++ guarantees **offline execution and offline data availability**.
+Phase 1.7 guarantees **offline execution and offline data availability**.
 
 ### App Shell Availability
 - `index.html`, `app.js`, `style.css`, and assets are cached by the Service Worker  
@@ -144,19 +136,16 @@ Phase 1.6-R++ guarantees **offline execution and offline data availability**.
 2. Load parsed vocabulary JSON from localStorage immediately  
 3. App is usable offline without delay  
 
-### Background Update Detection (Online Only)
-1. Perform HTTP **HEAD** request to the CSV endpoint  
-2. Compare returned **ETag / Last-Modified** headers with cached values  
-3. If unchanged → no action  
-4. If changed → download CSV, parse and validate content  
-5. Store parsed JSON and mark `updateAvailable = true`  
+### Background Update (Stale-While-Revalidate)
+1. The service worker intercepts the request for the vocabulary data (Google Sheet CSV).
+2. It serves the cached version of the data immediately (stale).
+3. In the background, it fetches the latest version from the network (revalidate).
+4. If the network fetch is successful, it updates the data cache.
+5. The service worker then sends a message to the application to notify it that a new version of the data is available.
 
 ### Update Application Rules
-- Updates **must not** be applied during an active learning or game session  
-- Updates are applied only when:
-  - App is restarted, or  
-  - User returns to the Landing screen, or  
-  - Parent explicitly triggers update application  
+- The application displays a notification banner to the user when a new version of the data is available.
+- The user can click a "Refresh" button on the banner to reload the page and get the latest data.
 
 ---
 
@@ -169,12 +158,12 @@ AppController
  └─ ServiceWorker
         │
         ├─ App Shell Cache
-        └─ Network Fallback
+        └─ Data Cache
 ```
 
 ---
 
-# PART D — CODING GUIDE (PHASE 1.6-R++)
+# PART D — CODING GUIDE (PHASE 1.7)
 
 ## D1. Project Structure
 
@@ -185,7 +174,7 @@ AppController
 ├── app.js
 ├── data-service.js
 ├── storage-service.js
-├── sw.js            // mandatory: App Shell caching
+├── sw.js            // mandatory: App Shell & Data caching
 ├── manifest.json
 └── README.md
 ```
@@ -207,22 +196,20 @@ Browsers without ES Module support are **not supported**.
 ### AppController
 - Application state management  
 - UI flow control  
-- Safe-boundary update application  
-- Parent-only recovery actions  
+- Handling user interactions
 
 ### StorageService
-- localStorage access  
-- Parsed vocabulary persistence  
-- HTTP HEAD update detection  
-- Deferred update flag management  
-- Quota-safe write operations  
+- localStorage access for parsed vocabulary persistence
+- Recovery actions (clearing cache)
 
 ### Service Worker
-- App Shell caching  
-- Offline navigation handling  
-- Network fallback for updates  
+- App Shell caching
+- **Data caching using stale-while-revalidate strategy**
+- Offline navigation handling
+- **Sending update notifications to the app**
 
 ### DataService
+- **Fetching data from Google Sheet**
 - CSV parsing  
 - Data validation and sanitisation  
 - Deck and distractor generation  
@@ -236,13 +223,12 @@ Browsers without ES Module support are **not supported**.
 - No rendering of CSV-derived content using `innerHTML`  
 - All localStorage writes must be wrapped in error handling  
 - CSV input must be validated before persistence  
-- IndexedDB may only be introduced when localStorage quota is exceeded  
 
 ---
 
 ## D5. Parent Recovery Controls
 
-A **Redownload Vocabulary** control must be available in Parent / Configuration mode.
+A **Redownload Vocabulary** control must be available on the main screen.
 
 Purpose:
 - Recover from corrupted or partial cache  
@@ -257,12 +243,12 @@ Purpose:
 
 | Scenario | Behaviour |
 |--------|----------|
-| First launch (online) | Cache App Shell → Fetch CSV → Parse → Store → Play |
+| First launch (online) | Cache App Shell → Fetch data from Google Sheet → Parse → Store in localStorage & SW Cache → Play |
 | Subsequent launch (offline) | Load App Shell from SW → Load data from localStorage |
-| Subsequent launch (online) | Load App Shell → HEAD check → Defer update if changed |
-| Update detected | Flag updateAvailable, apply at safe boundary |
+| Subsequent launch (online) | Load App Shell from SW → Load data from localStorage → SW fetches update in background |
+| Update detected | SW sends message to app → App shows notification → User clicks to refresh |
 | Corrupted cache | Parent triggers Redownload Vocabulary |
-| Browser cache cleared | App still loads via Service Worker |
+| Browser cache cleared | App still loads via Service Worker, data is re-fetched |
 
 ---
 
@@ -288,4 +274,4 @@ SJKC Fun Learning Companion helps children practise Mandarin vocabulary found in
 
 ---
 
-**End of Production Document — Phase 1.6-R++**
+**End of Production Document — Phase 1.7**
